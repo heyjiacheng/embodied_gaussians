@@ -399,7 +399,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/1e/8b/208170a2bd1c7899b01f57ac4bd1d67436735056f77b7941cb133621c4dc/pyrealsense2-2.55.1.6486-cp311-cp311-manylinux1_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/75/e4/2c27590dfc9992f73aabbeb9241ae20220bd9452df27483b6e56d3975cc5/PyYAML-6.0.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-      - pypi: git+https://github.com/jc211/realsense.git#a36690e7df3b1744f1c365fe1da156600f61a191
+      - pypi: git+https://github.com/heyjiacheng/realsense.git#521162bb1350823dc1380d6769242294c217b41d
       - pypi: https://files.pythonhosted.org/packages/19/71/39c7c0d87f8d4e6c020a393182060eaefeeae6c01dab6a84ec346f2567df/rich-13.9.4-py3-none-any.whl
       - pypi: git+https://github.com/jc211/ritm_interactive_segmentation#def5ff1ec309389d552f1a036000fc6160dd398f
       - pypi: https://files.pythonhosted.org/packages/32/ea/564bacc26b676c06a00266a3f25fdfe91a9d9a2532ccea7ce6dd394541bc/scipy-1.15.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
@@ -419,6 +419,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/a7/2e/757d2280d4fefe7d33af7615124e7e298ae7b8e3bc4446cdb8e88b0f9bab/triton-3.2.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/cf/4b/9a77dc721aa0b7f74440a42e4ef6f9a4fae7324e17f64f88b96f4c25cc05/typeguard-4.4.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/11/4f/5ba9e95cfe4b88ccb439b785356de7073b344abc30bf87ea767fedc0a257/tyro-0.9.16-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/37/52/193c154c3432c1c59ba84e58e3140d7742d4b2c21b19a25f578371aaca43/ur_rtde-1.6.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: direct+https://pypi.nvidia.com/warp-lang/warp_lang-1.7.0.dev20250225-py3-none-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/b4/b0/9fc566b0fe08b282c850063591a756057c3247b2362b9286429ec5bf1721/wrapt-1.17.2-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/8e/2c/1ce2f94d062a9457d980831f60062f274ac3286006c7ef007b9720fa562c/zarr-3.0.5-py3-none-any.whl
@@ -1538,7 +1539,7 @@ packages:
 - pypi: .
   name: embodied-gaussians
   version: 0.1.0
-  sha256: df93a68de7aec5b7ab108e301c4c252ed2c35789bf19e848411c29e38f1de07f
+  sha256: 7d0bb417a80ca5cfb0be1a4aa04d1fd8eea83bbdfb2ddebb7492682bec18c12c
   requires_dist:
   - warp-lang @ https://pypi.nvidia.com/warp-lang/warp_lang-1.7.0.dev20250225-py3-none-manylinux2014_x86_64.whl
   - torch>=2.5.1,<3
@@ -1551,10 +1552,11 @@ packages:
   - opencv-python
   - marsoom @ git+https://github.com/jc211/marsoom.git
   - torchcodec @ https://download.pytorch.org/whl/cu124/TorchCodec-0.1.1%2Bcu124-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  - realsense @ git+https://github.com/jc211/realsense.git
+  - realsense @ git+https://github.com/heyjiacheng/realsense.git
   - isegm @ git+https://github.com/jc211/ritm_interactive_segmentation
   - pydantic
   - drake @ https://github.com/RobotLocomotion/drake/releases/download/v1.37.0/drake-1.37.0-cp311-cp311-manylinux_2_35_x86_64.whl
+  - ur-rtde>=1.6.1,<2
   requires_python: '>=3.11,<3.12'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/embree-3.13.0-habf647b_1.conda
@@ -4675,7 +4677,7 @@ packages:
   purls: []
   size: 282480
   timestamp: 1740379431762
-- pypi: git+https://github.com/jc211/realsense.git#a36690e7df3b1744f1c365fe1da156600f61a191
+- pypi: git+https://github.com/heyjiacheng/realsense.git#521162bb1350823dc1380d6769242294c217b41d
   name: realsense
   version: 1.0.2
   requires_dist:
@@ -4683,6 +4685,7 @@ packages:
   - numpy
   - threadpoolctl
   - shared-memory @ git+https://github.com/jc211/shared_memory
+  - opencv-python>=4.11.0.86,<5
   requires_python: '>=3.10,<3.12'
 - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.3-pyhd8ed1ab_1.conda
   sha256: d701ca1136197aa121bbbe0e8c18db6b5c94acbd041c2b43c70e5ae104e1d8ad
@@ -5132,6 +5135,10 @@ packages:
   purls: []
   size: 122921
   timestamp: 1737119101255
+- pypi: https://files.pythonhosted.org/packages/37/52/193c154c3432c1c59ba84e58e3140d7742d4b2c21b19a25f578371aaca43/ur_rtde-1.6.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  name: ur-rtde
+  version: 1.6.1
+  sha256: dc9e9dcfc2659a5143fb88566d3ff77e07087b5dbe1dae4cfa35b640c858a40d
 - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.3.0-pyhd8ed1ab_0.conda
   sha256: 114919ffa80c328127dab9c8e7a38f9d563c617691fb81fccb11c1e86763727e
   md5: 32674f8dbfb7b26410ed580dd3c10a29
