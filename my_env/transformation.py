@@ -57,6 +57,20 @@ def format_matrix(mat, precision=12):
     """numpy 4×4 → Python list，保留 precision 位小数"""
     return [[round(float(v), precision) for v in row] for row in mat]
 
+# Define the transformation matrix from OpenCV camera frame to Blender camera frame convention
+# This matrix is used because the downstream scripts (like simple_body_builder.py)
+# expect the input X_WC from cameras_tf.json to be in a "Blender camera" convention,
+# such that their internal hardcoded transform (X_WC @ diag(1,-1,-1,1)) results in an OpenCV camera pose.
+# So, if our current H is World->OpenCV_Cam, we need World->Blender_Cam.
+# X_W_BlenderCam = X_W_OpenCVCam @ BlenderToOpenCV_Frame_Transfom_Inverse
+# where BlenderToOpenCV_Frame_Transform is diag(1,-1,-1,1). This matrix is its own inverse.
+OPENCV_CAM_TO_BLENDER_CAM_FRAME_TRANSFORM = np.array([
+    [1,  0,  0,  0],
+    [0,  1,  0,  0],
+    [0,  0,  1,  0],
+    [0,  0,  0,  1]
+])
+
 # ---------------- 1. 处理两个 D405 ---------------- #
 # 直接把 easy_handeye/yaml 的四元数和平移抄进来
 D405_CAM_PARAMS = {
@@ -84,13 +98,15 @@ def d405_to_json_block():
     block = {}
     for serial, p in D405_CAM_PARAMS.items():
         H = homogeneous_from_quat(**p)
+        # Assuming H is World->OpenCVCamera, convert to World->BlenderCamera for script input
+        H = H @ OPENCV_CAM_TO_BLENDER_CAM_FRAME_TRANSFORM
         block[serial] = {"X_WT": format_matrix(H)}
     return block
 
 # ---------------- 2. 处理腕端 D435 ---------------- #
 # Tool→Camera 标定结果
 T2C_QW, T2C_QX, T2C_QY, T2C_QZ = 0.9997083141872938, -0.023555480691573528, -0.0034626823830495868, 0.004054097298058542
-T2C_t = np.array([-0.02114033416427041, -0.13959742644477738, 0.0034640815124871906])
+T2C_t = np.array([-0.02114033416427041, -0.13959742644477738, 0.0334640815124871906])
 R_T_C  = quat_to_rotmat(T2C_QW, T2C_QX, T2C_QY, T2C_QZ)
 
 def get_robot_pose(ip):
@@ -116,6 +132,9 @@ def d435_to_json_block(ip):
     H_B_C = np.eye(4)
     H_B_C[:3, :3] = R_B_C
     H_B_C[:3,  3] = t_B_C
+
+    # Assuming H_B_C is Base->OpenCVCamera, convert to Base->BlenderCamera for script input
+    H_B_C = H_B_C @ OPENCV_CAM_TO_BLENDER_CAM_FRAME_TRANSFORM
 
     return {D435_SERIAL: {"X_WT": format_matrix(H_B_C)}}
 

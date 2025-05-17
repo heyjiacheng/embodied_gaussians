@@ -13,7 +13,7 @@ class Posed:
 
     def get_X_WC(self, format: Literal["opencv", "blender"] = "blender") -> np.ndarray:
         """Get the camera to world transform in the specified format"""
-
+        # print("format", format)
         if format == "opencv":
             X_WC = self.X_WC @ np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0.0, 0.0, 0.0, 1.0]])
             return X_WC

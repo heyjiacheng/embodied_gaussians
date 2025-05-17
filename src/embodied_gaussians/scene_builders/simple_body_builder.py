@@ -93,6 +93,7 @@ class SimpleBodyBuilder:
         # ================ Step 4: Prune points not in masks =================
         mask = SimpleBodyBuilder._prune_points_not_in_masks(sphere_means, datapoints)
         sphere_means = sphere_means[mask]
+        print("stage 4 sphere_means", sphere_means.shape[0])
         if sphere_means.shape[0] == 0:
             logger.warning("No points left after pruning")
             return None
@@ -102,7 +103,7 @@ class SimpleBodyBuilder:
             sphere_means = SimpleBodyBuilder._prune_points_below_ground(
                 sphere_means, settings.ground
             )
-
+        print("stage 5 sphere_means", sphere_means.shape[0])
         if sphere_means.shape[0] == 0:
             logger.warning("No points left after pruning points below ground")
             return None
@@ -239,13 +240,14 @@ class SimpleBodyBuilder:
             X_WC = datapoint.X_WC @ np.array(
                 [[1, 0, 0, 0.0], [0, -1, 0, 0.0], [0, 0, -1, 0.0], [0.0, 0.0, 0.0, 1.0]]
             )  # rotate areound x axis to make it in opencv standard
+            # X_WC = datapoint.X_WC
             pointcloud.transform(X_WC)
             all_pointclouds.append(pointcloud)
 
         final_pointcloud = o3d.geometry.PointCloud()
         for p in all_pointclouds:
             final_pointcloud += p
-
+        print("stage 1 final_pointcloud", len(final_pointcloud.points))
         if len(final_pointcloud.points) == 0:
             logger.warning("The pointcloud is empty")
             return None
@@ -279,6 +281,7 @@ class SimpleBodyBuilder:
         ).reshape(-1, 3)
 
         pts = (X_WO[:3, :3] @ pts.T + X_WO[:3, 3:4]).T
+        print("stage 3 pts", pts.shape)
 
         return pts
 
