@@ -237,10 +237,7 @@ class SimpleBodyBuilder:
                     depth_scale=1.0 / datapoint.depth_scale,
                     depth_trunc=max_depth,
                 )
-            X_WC = datapoint.X_WC @ np.array(
-                [[1, 0, 0, 0.0], [0, -1, 0, 0.0], [0, 0, -1, 0.0], [0.0, 0.0, 0.0, 1.0]]
-            )  # rotate areound x axis to make it in opencv standard
-            # X_WC = datapoint.X_WC
+            X_WC = datapoint.X_WC
             pointcloud.transform(X_WC)
             all_pointclouds.append(pointcloud)
 
@@ -305,7 +302,8 @@ class SimpleBodyBuilder:
             uv = uv[valid_mask]
             inds = np.where(valid_mask)[0]
 
-            mask = datapoint.mask == 0  # 1 is object, 0 is background, 2 is occlusion
+            # 暂时放弃用mask消除，因为mask是错的
+            mask = datapoint.mask == 2  # 1 is object, 0 is background, 2 is occlusion
             inds_to_remove = inds[mask[uv[:, 1], uv[:, 0]]]
             remove_mask[inds_to_remove] = True
             final_mask |= remove_mask
@@ -608,15 +606,12 @@ class SimpleBodyBuilder:
             if datapoint.mask is None:
                 continue
 
-            X_WC = datapoint.X_WC @ np.array(
-                [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0.0, 0.0, 0.0, 1.0]]
-            )  # rotate areound x axis to make it in opencv standard
+            X_WC = datapoint.X_WC
             X_CW = np.linalg.inv(X_WC)
             X_CW = torch.from_numpy(X_CW).float().cuda()
             X_CWs.append(X_CW)
             K = torch.from_numpy(datapoint.K).float().cuda()
             Ks.append(K)
-            # image = torch.from_numpy(datapoint.mask).float().cuda().unsqueeze(-1).repeat(1, 1, 3)
             mask = torch.from_numpy(datapoint.mask).cuda()
             masks.append(mask)
 
