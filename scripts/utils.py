@@ -39,14 +39,16 @@ def get_datapoints_from_live_cameras(
             K = all_intrinsics[serial]
             depth_scale = all_depth_scale[serial]
             color = camera_data["color"]
+            # Convert BGR to RGB for segmentor (RealSense outputs BGR, but segmentor expects RGB)
+            color_rgb = color[:, :, [2, 1, 0]].copy()  # BGR to RGB conversion with contiguous memory
             print("segmenting")
-            mask = segmentor.segment_with_gui(color)
+            mask = segmentor.segment_with_gui(color_rgb)
             print("segmented")
             datapoint = MaskedPosedImageAndDepth(
                 K=K,
                 X_WC=extrinsics[serial].X_WC,
-                image=camera_data["color"],
-                format="bgr",
+                image=color_rgb,  # Use RGB converted image
+                format="rgb",
                 depth=camera_data["depth"],
                 depth_scale=depth_scale,
                 mask=mask,

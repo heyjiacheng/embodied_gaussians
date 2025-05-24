@@ -388,8 +388,9 @@ class SimpleBodyBuilder:
                 depth = render_colors[..., -1]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 for cam in range(rgb.shape[0]):
-                    cv2.imshow(f"color_{cam}", rgb[cam])
-                    cv2.imshow(f"groundtruth_{cam}", gt_data.images[cam].detach().cpu().numpy())
+                    # Convert RGB to BGR for cv2.imshow
+                    cv2.imshow(f"color_{cam}", rgb[cam][:, :, [2, 1, 0]])
+                    cv2.imshow(f"groundtruth_{cam}", gt_data.images[cam].detach().cpu().numpy()[:, :, [2, 1, 0]])
                     break
                 cv2.waitKey(1)
 
@@ -484,7 +485,8 @@ class SimpleBodyBuilder:
                 depth = render_colors[..., -1]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 for cam in range(rgb.shape[0]):
-                    cv2.imshow(f"color_{cam}", rgb[cam])
+                    # Convert RGB to BGR for cv2.imshow
+                    cv2.imshow(f"color_{cam}", rgb[cam][:, :, [2, 1, 0]])
                     break
                 cv2.waitKey(1)
 
