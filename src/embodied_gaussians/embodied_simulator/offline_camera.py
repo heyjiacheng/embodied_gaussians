@@ -42,6 +42,5 @@ class OfflineCamera:
             return self.last_image
         self.last_index = index
         color = self.decoder.get_frame_at(index).data / 255
-        color = color[:, :, [2, 1, 0]].copy()  # convert back to bgr with contiguous memory
         self.last_image = color
         return self.last_image

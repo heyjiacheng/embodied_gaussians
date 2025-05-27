@@ -288,27 +288,45 @@ class SimpleBodyBuilder:
     ):
         assert points.shape[1] == 3
 
-        final_mask = np.zeros((points.shape[0],), dtype=bool)
+        # Track how many views each point appears as foreground in
+        foreground_count_per_point = np.zeros((points.shape[0],), dtype=int)
 
-        for datapoint in datapoints:
+        for view_idx, datapoint in enumerate(datapoints):
             if datapoint.mask is None:
                 logger.warning("Mask is None for datapoint")
                 continue
-            remove_mask = np.zeros((points.shape[0],), dtype=bool)
+            
             width, height = datapoint.mask.shape[1], datapoint.mask.shape[0]
-            uv, valid_mask = mask = SimpleBodyBuilder._project_points(
+            uv, valid_mask = SimpleBodyBuilder._project_points(
                 points, datapoint.K, datapoint.X_WC, width, height
             )
             uv = uv[valid_mask]
             inds = np.where(valid_mask)[0]
 
-            # 暂时放弃用mask消除，因为mask是错的
-            mask = datapoint.mask == 2  # 1 is object, 0 is background, 2 is occlusion
-            inds_to_remove = inds[mask[uv[:, 1], uv[:, 0]]]
-            remove_mask[inds_to_remove] = True
-            final_mask |= remove_mask
+            # 1 is object, 0 is background, 2 is occlusion
+            if len(uv) > 0:
+                # Add bounds checking to avoid index errors
+                valid_uv_mask = (uv[:, 1] >= 0) & (uv[:, 1] < height) & (uv[:, 0] >= 0) & (uv[:, 0] < width)
+                valid_uv = uv[valid_uv_mask]
+                valid_inds = inds[valid_uv_mask]
+                
+                if len(valid_uv) > 0:
+                    mask = datapoint.mask == 1  # Select foreground pixels
+                    foreground_pixels = mask[valid_uv[:, 1], valid_uv[:, 0]]
+                    foreground_point_inds = valid_inds[foreground_pixels]
+                    foreground_count_per_point[foreground_point_inds] += 1
 
-        return ~final_mask
+        # Strategy: Choose your filtering strictness level
+        
+        # Option 1: STRICTEST - Require foreground in ALL views (eliminates all noise)
+        # min_views_required = len(datapoints)
+        
+        # Option 2: MODERATE - Require foreground in majority of views (balanced approach)  
+        min_views_required = max(2, len(datapoints) // 2 + 1)
+        
+        foreground_sufficient_views = foreground_count_per_point >= min_views_required
+        
+        return foreground_sufficient_views
 
     @staticmethod
     def _prune_points_below_ground(xyz: np.ndarray, ground: Ground) -> np.ndarray:
@@ -532,12 +550,10 @@ class SimpleBodyBuilder:
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         points: (n, 3)
-        X_WC expected in blender standard
+        X_WC expected in opencv standard (transformation already applied)
         returns: (n, 2) in pixel coordinates and (n,) boolean mask where True means the point is in front of the camera and in the image
         """
-        X_WC = X_WC @ np.array(
-            [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0.0, 0.0, 0.0, 1.0]]
-        )  # rotate areound x axis to make it in opencv standard
+        # No need for coordinate transformation since it's already done in _merge_into_pointcloud
         X_CW = np.linalg.inv(X_WC)
         p_C = X_CW[:3, :3] @ points.T + X_CW[:3, 3:4]
         p_C = K @ p_C
