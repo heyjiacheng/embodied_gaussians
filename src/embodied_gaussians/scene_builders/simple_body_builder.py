@@ -319,10 +319,10 @@ class SimpleBodyBuilder:
         # Strategy: Choose your filtering strictness level
         
         # Option 1: STRICTEST - Require foreground in ALL views (eliminates all noise)
-        # min_views_required = len(datapoints)
+        min_views_required = len(datapoints)
         
         # Option 2: MODERATE - Require foreground in majority of views (balanced approach)  
-        min_views_required = max(2, len(datapoints) // 2 + 1)
+        # min_views_required = max(2, len(datapoints) // 2 + 1)
         
         foreground_sufficient_views = foreground_count_per_point >= min_views_required
         
