@@ -73,8 +73,7 @@ class GroundFinder:
                     depth_scale=1.0 / datapoint.depth_scale,
                     depth_trunc=settings.max_depth,
                 )
-            # pointcloud.transform(datapoint.get_X_WC())
-            pointcloud.transform(datapoint.get_X_WC("blender"))
+            pointcloud.transform(datapoint.get_X_WC("opencv"))
             all_pointclouds.append(pointcloud)
 
         final_pointcloud = o3d.geometry.PointCloud()

@@ -82,6 +82,7 @@ def main(params: Params):
     result = SimpleBodyBuilder.build(
         name=name, settings=settings, datapoints=datapoints, visualize=params.visualize
     )
+    print("type(result)", type(result))
 
     if result is None:
         print("Body builder failed")

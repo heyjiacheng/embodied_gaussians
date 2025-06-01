@@ -63,6 +63,11 @@ class TrackingParams:
     """
     Convert BGR to RGB format. Set to True if red/blue colors are swapped in visualization.
     """
+    fix_gaussian_colors: bool = True
+    """
+    Fix gaussian colors by converting from RGB to BGR for proper visualization. 
+    Set to False if colors appear correct without conversion.
+    """
 
 
 class RealTimeTracker:
@@ -103,6 +108,18 @@ class RealTimeTracker:
         body = RealTimeTracker.get_body("tblock")
         ground_body = RealTimeTracker.get_body("ground")
         
+        # Fix color channel order: convert RGB to BGR for proper visualization
+        # The visualization system expects BGR format, but the saved gaussians are in RGB
+        # if self.params.fix_gaussian_colors and body.gaussians and body.gaussians.colors:
+        #     print("Converting gaussian colors from RGB to BGR for proper visualization...")
+        #     # Convert RGB to BGR by swapping red and blue channels
+        #     colors_bgr = []
+        #     for rgb_color in body.gaussians.colors:
+        #         # Swap R and B channels: [R, G, B] -> [B, G, R]
+        #         bgr_color = [rgb_color[2], rgb_color[1], rgb_color[0]]
+        #         colors_bgr.append(bgr_color)
+        #     body.gaussians.colors = colors_bgr
+        
         builder = EmbodiedGaussiansBuilder()
         body_id = builder.add_rigid_body(body, add_gaussians=True)
         builder.add_visual_body(ground_body)
@@ -115,10 +132,10 @@ class RealTimeTracker:
         env = EmbodiedGaussiansEnvironment(final_builder)
         
         # Disable gravity for the tracking object (we want visual forces to control it)
-        # if env.num_envs() > 0:
-        #     gravity_factors = wp.to_torch(env.sim.model.gravity_factor).reshape(env.num_envs(), -1)
-        #     if gravity_factors.shape[1] > body_id:
-        #         gravity_factors[:, body_id] = 0.0
+        if env.num_envs() > 0:
+            gravity_factors = wp.to_torch(env.sim.model.gravity_factor).reshape(env.num_envs(), -1)
+            if gravity_factors.shape[1] > body_id:
+                gravity_factors[:, body_id] = 0.0
         
         env.stash_state()
         return env
@@ -154,18 +171,9 @@ class RealTimeTracker:
             # We need to convert to Blender convention for the tracking system
             X_WC_opencv = self.extrinsics[serial].X_WC
             
-            # Convert from OpenCV to Blender convention: Blender = OpenCV @ diag(1,-1,-1,1)
-            opencv_to_blender_transform = np.array([
-                [1,  0,  0,  0],
-                [0, -1,  0,  0],
-                [0,  0, -1,  0],
-                [0,  0,  0,  1]
-            ])
-            X_WC_blender = X_WC_opencv @ opencv_to_blender_transform
-            
             datapoint = MaskedPosedImageAndDepth(
                 K=K,
-                X_WC=X_WC_blender,  # Now in Blender convention
+                X_WC=X_WC_opencv,  # Now in Blender convention
                 image=color_rgb,
                 format="rgb",
                 depth=depth,
@@ -230,9 +238,9 @@ class RealTimeTracker:
             put_fps=self.params.fps
         ) as realsenses:
             print("Setting up cameras...")
-            realsenses.set_exposure(177, 70)
-            realsenses.set_white_balance(4600)
-            await trio.sleep(1)  # Give cameras time to adjust
+            # realsenses.set_exposure(177, 70)
+            # realsenses.set_white_balance(4600)
+            # await trio.sleep(1)  # Give cameras time to adjust
             
             # Get camera intrinsics and depth scale
             self.camera_intrinsics = realsenses.get_intrinsics()

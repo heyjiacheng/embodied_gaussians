@@ -209,8 +209,7 @@ class PointCloudBodyBuilder:
                 height = int(width * aspect)
                 rgb = cv2.resize(rgb, (width, height))
                 depth = cv2.resize(depth, (width, height))
-                # Convert RGB to BGR for cv2.imshow  
-                cv2.imshow("Colors", rgb[:, :, [2, 1, 0]])
+                cv2.imshow("Colors", rgb)
                 cv2.imshow("Depth", depth)
                 cv2.waitKey(1)
 

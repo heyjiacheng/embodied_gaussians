@@ -93,7 +93,6 @@ class SimpleBodyBuilder:
         # ================ Step 4: Prune points not in masks =================
         mask = SimpleBodyBuilder._prune_points_not_in_masks(sphere_means, datapoints)
         sphere_means = sphere_means[mask]
-        print("stage 4 sphere_means", sphere_means.shape[0])
         if sphere_means.shape[0] == 0:
             logger.warning("No points left after pruning")
             return None
@@ -103,7 +102,7 @@ class SimpleBodyBuilder:
             sphere_means = SimpleBodyBuilder._prune_points_below_ground(
                 sphere_means, settings.ground
             )
-        print("stage 5 sphere_means", sphere_means.shape[0])
+
         if sphere_means.shape[0] == 0:
             logger.warning("No points left after pruning points below ground")
             return None
@@ -237,14 +236,16 @@ class SimpleBodyBuilder:
                     depth_scale=1.0 / datapoint.depth_scale,
                     depth_trunc=max_depth,
                 )
-            X_WC = datapoint.X_WC
+            X_WC = datapoint.X_WC @ np.array(
+                [[1, 0, 0, 0.0], [0, -1, 0, 0.0], [0, 0, -1, 0.0], [0.0, 0.0, 0.0, 1.0]]
+            )  # rotate areound x axis to make it in opencv standard
             pointcloud.transform(X_WC)
             all_pointclouds.append(pointcloud)
 
         final_pointcloud = o3d.geometry.PointCloud()
         for p in all_pointclouds:
             final_pointcloud += p
-        print("stage 1 final_pointcloud", len(final_pointcloud.points))
+
         if len(final_pointcloud.points) == 0:
             logger.warning("The pointcloud is empty")
             return None
@@ -278,7 +279,6 @@ class SimpleBodyBuilder:
         ).reshape(-1, 3)
 
         pts = (X_WO[:3, :3] @ pts.T + X_WO[:3, 3:4]).T
-        print("stage 3 pts", pts.shape)
 
         return pts
 
@@ -288,45 +288,26 @@ class SimpleBodyBuilder:
     ):
         assert points.shape[1] == 3
 
-        # Track how many views each point appears as foreground in
-        foreground_count_per_point = np.zeros((points.shape[0],), dtype=int)
+        final_mask = np.zeros((points.shape[0],), dtype=bool)
 
-        for view_idx, datapoint in enumerate(datapoints):
+        for datapoint in datapoints:
             if datapoint.mask is None:
                 logger.warning("Mask is None for datapoint")
                 continue
-            
+            remove_mask = np.zeros((points.shape[0],), dtype=bool)
             width, height = datapoint.mask.shape[1], datapoint.mask.shape[0]
-            uv, valid_mask = SimpleBodyBuilder._project_points(
+            uv, valid_mask = mask = SimpleBodyBuilder._project_points(
                 points, datapoint.K, datapoint.X_WC, width, height
             )
             uv = uv[valid_mask]
             inds = np.where(valid_mask)[0]
 
-            # 1 is object, 0 is background, 2 is occlusion
-            if len(uv) > 0:
-                # Add bounds checking to avoid index errors
-                valid_uv_mask = (uv[:, 1] >= 0) & (uv[:, 1] < height) & (uv[:, 0] >= 0) & (uv[:, 0] < width)
-                valid_uv = uv[valid_uv_mask]
-                valid_inds = inds[valid_uv_mask]
-                
-                if len(valid_uv) > 0:
-                    mask = datapoint.mask == 1  # Select foreground pixels
-                    foreground_pixels = mask[valid_uv[:, 1], valid_uv[:, 0]]
-                    foreground_point_inds = valid_inds[foreground_pixels]
-                    foreground_count_per_point[foreground_point_inds] += 1
+            mask = datapoint.mask == 0  # 1 is object, 0 is background, 2 is occlusion
+            inds_to_remove = inds[mask[uv[:, 1], uv[:, 0]]]
+            remove_mask[inds_to_remove] = True
+            final_mask |= remove_mask
 
-        # Strategy: Choose your filtering strictness level
-        
-        # Option 1: STRICTEST - Require foreground in ALL views (eliminates all noise)
-        min_views_required = len(datapoints)
-        
-        # Option 2: MODERATE - Require foreground in majority of views (balanced approach)  
-        # min_views_required = max(2, len(datapoints) // 2 + 1)
-        
-        foreground_sufficient_views = foreground_count_per_point >= min_views_required
-        
-        return foreground_sufficient_views
+        return ~final_mask
 
     @staticmethod
     def _prune_points_below_ground(xyz: np.ndarray, ground: Ground) -> np.ndarray:
@@ -406,9 +387,8 @@ class SimpleBodyBuilder:
                 depth = render_colors[..., -1]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 for cam in range(rgb.shape[0]):
-                    # Convert RGB to BGR for cv2.imshow
-                    cv2.imshow(f"color_{cam}", rgb[cam][:, :, [2, 1, 0]])
-                    cv2.imshow(f"groundtruth_{cam}", gt_data.images[cam].detach().cpu().numpy()[:, :, [2, 1, 0]])
+                    cv2.imshow(f"color_{cam}", rgb[cam])
+                    cv2.imshow(f"groundtruth_{cam}", gt_data.images[cam].detach().cpu().numpy())
                     break
                 cv2.waitKey(1)
 
@@ -503,8 +483,7 @@ class SimpleBodyBuilder:
                 depth = render_colors[..., -1]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 for cam in range(rgb.shape[0]):
-                    # Convert RGB to BGR for cv2.imshow
-                    cv2.imshow(f"color_{cam}", rgb[cam][:, :, [2, 1, 0]])
+                    cv2.imshow(f"color_{cam}", rgb[cam])
                     break
                 cv2.waitKey(1)
 
@@ -550,10 +529,12 @@ class SimpleBodyBuilder:
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         points: (n, 3)
-        X_WC expected in opencv standard (transformation already applied)
+        X_WC expected in blender standard
         returns: (n, 2) in pixel coordinates and (n,) boolean mask where True means the point is in front of the camera and in the image
         """
-        # No need for coordinate transformation since it's already done in _merge_into_pointcloud
+        X_WC = X_WC @ np.array(
+            [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0.0, 0.0, 0.0, 1.0]]
+        )  # rotate areound x axis to make it in opencv standard
         X_CW = np.linalg.inv(X_WC)
         p_C = X_CW[:3, :3] @ points.T + X_CW[:3, 3:4]
         p_C = K @ p_C
@@ -624,12 +605,15 @@ class SimpleBodyBuilder:
             if datapoint.mask is None:
                 continue
 
-            X_WC = datapoint.X_WC
+            X_WC = datapoint.X_WC @ np.array(
+                [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0.0, 0.0, 0.0, 1.0]]
+            )  # rotate areound x axis to make it in opencv standard
             X_CW = np.linalg.inv(X_WC)
             X_CW = torch.from_numpy(X_CW).float().cuda()
             X_CWs.append(X_CW)
             K = torch.from_numpy(datapoint.K).float().cuda()
             Ks.append(K)
+            # image = torch.from_numpy(datapoint.mask).float().cuda().unsqueeze(-1).repeat(1, 1, 3)
             mask = torch.from_numpy(datapoint.mask).cuda()
             masks.append(mask)
 

@@ -21,17 +21,15 @@ def get_datapoints_from_live_cameras(
         raise ValueError(f"Unknown segmentor {segmentor}")
 
     datapoints = []
-    print(extrinsics.keys())
     serial_numbers = list(extrinsics.keys())
     with MultiRealsense(serial_numbers=serial_numbers, enable_depth=True) as realsenses:
-        print("starting realsense setup")
-        realsenses.set_exposure(177, 70)
-        realsenses.set_white_balance(4600)
+        # realsenses.set_exposure(177, 70)
+        # realsenses.set_white_balance(4600)
         time.sleep(1)  # Give some time for color to adjust
         all_camera_data = realsenses.get()
         all_intrinsics = realsenses.get_intrinsics()
         all_depth_scale = realsenses.get_depth_scale()
-        print("realsense setup done")
+
         for serial, camera_data in all_camera_data.items():
             if serial not in extrinsics:
                 print(f"Camera {serial} is not known. Skipping.")
@@ -39,16 +37,12 @@ def get_datapoints_from_live_cameras(
             K = all_intrinsics[serial]
             depth_scale = all_depth_scale[serial]
             color = camera_data["color"]
-            # Convert BGR to RGB for segmentor (RealSense outputs BGR, but segmentor expects RGB)
-            color_rgb = color[:, :, [2, 1, 0]].copy()  # BGR to RGB conversion with contiguous memory
-            print("segmenting")
-            mask = segmentor.segment_with_gui(color_rgb)
-            print("segmented")
+            mask = segmentor.segment_with_gui(color)
             datapoint = MaskedPosedImageAndDepth(
                 K=K,
                 X_WC=extrinsics[serial].X_WC,
-                image=color_rgb,  # Use RGB converted image
-                format="rgb",
+                image=camera_data["color"],
+                format="bgr",
                 depth=camera_data["depth"],
                 depth_scale=depth_scale,
                 mask=mask,

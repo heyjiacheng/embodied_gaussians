@@ -63,8 +63,8 @@ def format_matrix(mat, precision=12):
 # where BlenderToOpenCV_Frame_Transform is diag(1,-1,-1,1). This matrix is its own inverse.
 OPENCV_CAM_TO_BLENDER_CAM_FRAME_TRANSFORM = np.array([
     [1,  0,  0,  0],
-    [0,  1,  0,  0],
-    [0,  0,  1,  0],
+    [0,  -1,  0,  0],
+    [0,  0,  -1,  0],
     [0,  0,  0,  1]
 ])
 
