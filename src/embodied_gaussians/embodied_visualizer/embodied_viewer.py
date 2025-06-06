@@ -391,7 +391,7 @@ class EmbodiedViewer(SimulationViewer):
             Ks=Ks,
             width=self.screen_width,
             height=self.screen_height,
-            background=torch.tensor([1.0, 1.0, 1.0]).cuda().unsqueeze(0),
+            background=None,  # Use default background to avoid shape issues
         )
 
         ids = meta["gaussian_ids"]
@@ -451,7 +451,7 @@ class EmbodiedViewer(SimulationViewer):
             Ks=Ks,
             width=self.screen_width,
             height=self.screen_height,
-            background=torch.tensor([1.0, 1.0, 1.0]).cuda().unsqueeze(0),
+            background=None,  # Use default background to avoid shape issues
             near_plane=s.near_plane,
             far_plane=s.far_plane,
         )

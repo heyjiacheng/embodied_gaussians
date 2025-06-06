@@ -94,7 +94,7 @@ class EmbodiedGaussiansSimulator(Simulator):
         Ks: torch.Tensor,
         width: float,
         height: float,
-        background: torch.Tensor,
+        background: torch.Tensor = None,
     ):
         num_images = X_CWs.shape[0]
         with torch.no_grad():
@@ -110,7 +110,7 @@ class EmbodiedGaussiansSimulator(Simulator):
                 height=int(height),
                 camera_model="pinhole",
                 render_mode="RGB",
-                backgrounds=background.reshape(1, 3).repeat(num_images, 1),
+                backgrounds=background,  # Pass background as-is, let gsplat handle None
             )
         return render_colors, render_alphas, info
 
@@ -121,7 +121,7 @@ class EmbodiedGaussiansSimulator(Simulator):
         Ks: torch.Tensor,
         width: float,
         height: float,
-        background: torch.Tensor,
+        background: torch.Tensor = None,
         near_plane=0.01,
         far_plane=3.0,
         render_mode: Literal["RGB", "D", "ED", "RGB+D", "RGB+ED"] = "RGB",
@@ -176,6 +176,7 @@ class EmbodiedGaussiansSimulator(Simulator):
                 height=int(frames.height),
                 camera_model="pinhole",
                 render_mode="RGB",
+                backgrounds=None,  # Let gsplat use default background
             )
 
             loss = torch.nn.functional.mse_loss(render_colors, frames.colors_gpu)
@@ -242,7 +243,7 @@ def render_gaussians(
     Ks: torch.Tensor,
     width: float,
     height: float,
-    background: torch.Tensor,
+    background: torch.Tensor = None,
     near_plane=0.01,
     far_plane=3.0,
     render_mode: Literal["RGB", "D", "ED", "RGB+D", "RGB+ED"] = "RGB",
@@ -262,7 +263,7 @@ def render_gaussians(
             height=int(height),
             camera_model="pinhole",
             render_mode=render_mode,
-            backgrounds=background.reshape(1, 3).repeat(num_images, 1),
+            backgrounds=background,  # Pass background as-is, let gsplat handle None
             near_plane=near_plane,
             far_plane=far_plane,
             **kwargs,

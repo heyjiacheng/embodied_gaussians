@@ -6,7 +6,7 @@ description = "Physically Embodied Guassian Splatting"
 version = "0.1.0"
 dependencies=[
     "warp-lang@https://pypi.nvidia.com/warp-lang/warp_lang-1.7.0.dev20250225-py3-none-manylinux2014_x86_64.whl", # update to 1.7.0 when released
-    "torch>=2.5.1,<3",
+    "torch@https://download.pytorch.org/whl/cu124/torch-2.5.1%2Bcu124-cp311-cp311-linux_x86_64.whl",
     "tyro",
     "torchvision",
     "tqdm", 
